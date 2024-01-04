@@ -273,7 +273,7 @@ for index, row in enumerate(rows):
     fileCSV = fileName + '.csv'
     writeCSV(fileCSV, relevantSamples)
 
-    # Reset tacking of good samples.
+    # Reset tracking of good samples.
     if not cleanEnough:
         cleanRows = 0
         continue
