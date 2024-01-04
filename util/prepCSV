@@ -4,6 +4,7 @@
 
 import sys
 import csv
+import math
 import matplotlib.pyplot as plt
 
 name = sys.argv[1]
@@ -23,6 +24,9 @@ destinationFile = destination + "/" + name + ".csv"
 destinationGraphFileImage = destinationGraphImage + "/" + name + ".png"
 destinationGraphFilePDF = destinationGraphPDF + "/" + name + ".pdf"
 # print(destinationFile)
+
+pi = 3.14
+halfPi = pi/2
 
 
 def readCSV(fileName):
@@ -65,19 +69,28 @@ def writeCSV(fileName, rows):
         for row in rows:
             writer.writerow(row)
 
-def calculateDiff(rows, longField, latField, outField):
+def calculateDiff(rows, longField, latField, outFieldDistance, outFieldAngle):
     # Calculate diff.
     for index, row in enumerate(rows):
         if index == 0:
-            row[outField] = 0;
+            row[outFieldDistance] = 0;
+            row[outFieldAngle] = 0
+            row[outFieldAngle + 'Diff'] = 0
             continue
 
         longDiff = float(row[longField]) - float(rows[index - 1][longField])
         latDiff = float(row[latField]) - float(rows[index - 1][latField])
 
-        c = (longDiff**2 + latDiff**2)**0.5
+        row[outFieldDistance] = (longDiff**2 + latDiff**2)**0.5
 
-        row[outField] = c
+        previousAngle = rows[index - 1][outFieldAngle]
+        row[outFieldAngle] = math.atan2(latDiff, longDiff)
+        row[outFieldAngle + 'Diff'] = row[outFieldAngle] - rows[index - 1][outFieldAngle]
+
+        if row[outFieldAngle + 'Diff'] > halfPi:
+            row[outFieldAngle + 'Diff'] -= 3.14
+        if row[outFieldAngle + 'Diff'] < halfPi * -1:
+            row[outFieldAngle + 'Diff'] += 3.1
 
     return rows
 
@@ -120,6 +133,39 @@ def calculateSimpleDiff(rows, inField, outField):
 
     return rows
 
+def toIntDegrees(rows, inField, outField, inScale, outScale):
+    # Make an integer version of an angle that is easier to parse for ML purposes.
+    nOutScale = outScale * -1
+
+    for index, row in enumerate(rows):
+        row[outField + 'DegreesDebug'] = math.degrees(row[inField])
+        row[outField] = int(row[outField + 'DegreesDebug'] / inScale * outScale)
+
+        if row[outField] > outScale:
+            row[outField] = outScale
+
+        if row[outField] < nOutScale:
+            row[outField] = nOutScale
+
+        row[outField + 'PositiveCentered'] = row[outField] + outScale # Expected field to be used.
+
+    return rows
+
+def toIntDistance(rows, inField, outField, inScale, outScale):
+    # Make an integer version of a distance that is easier to parse for ML purposes.
+    nOutScale = outScale * -1
+
+    for index, row in enumerate(rows):
+        row[outField] = int(row[inField] / inScale * outScale)
+
+        if row[outField] > outScale:
+            row[outField] = outScale
+
+        if row[outField] < nOutScale:
+            row[outField] = nOutScale
+
+    return rows
+
 def createGraph(destinationGraphFilePDF, destinationGraphFileImage, threshold, nThresholdValue, rows):
     # Extract data for the graph.
     # This could have been done while it was generated. But in the future, there are likely to be modifications to the data somewhere along the chain, and those modifications need to be reflected in the graph.
@@ -127,6 +173,8 @@ def createGraph(destinationGraphFilePDF, destinationGraphFileImage, threshold, n
     diffdiff = []
     meanDiffdiff = []
     correctedDiffdiff = []
+    angle = []
+    correctedAngle = []
     pThreshold = []
     nThreshold = []
 
@@ -136,20 +184,36 @@ def createGraph(destinationGraphFilePDF, destinationGraphFileImage, threshold, n
         meanDiffdiff.append(row['meanDiffdiff'])
         correctedDiffdiff.append(row['correctedDiffdiff'])
 
+        angle.append(row['angleDiff'])
+        correctedAngle.append(row['correctedAngleDiff'])
+
         pThreshold.append(threshold)
         nThreshold.append(nThresholdValue)
 
-    plt.plot(x, diffdiff, label="diffdiff")
-    plt.plot(x, meanDiffdiff, label="meanDiffdiff")
-    plt.plot(x, correctedDiffdiff, label="correctedDiffdiff")
-    plt.plot(x, pThreshold, label="pThreshold")
-    plt.plot(x, nThreshold, label="nThreshold")
+    fig, ax1 = plt.subplots()
 
-    plt.xlabel("Rows")
-    plt.ylabel("Amplitude")
+    # Primary y-axis.
+    lineWidth = 0.5
+    ax1.set_xlabel('Rows')
+    ax1.set_ylabel('Aplitude')
+    ax1.plot(x, diffdiff, linewidth = lineWidth, label="diffdiff")
+    ax1.plot(x, meanDiffdiff, linewidth = lineWidth, label="meanDiffdiff")
+    ax1.plot(x, correctedDiffdiff, linewidth = lineWidth, label="correctedDiffdiff")
+    ax1.plot(x, pThreshold, linewidth = lineWidth, label="pThreshold")
+    ax1.plot(x, nThreshold, linewidth = lineWidth, label="nThreshold")
+
+    # Secondary y-axis.
+    ax2 = ax1.twinx()
+    ax2.set_ylabel('Angle (Radians)')
+    ax2.plot(x, angle, label="angleDiff", linewidth = lineWidth, color='cyan')
+    ax2.plot(x, correctedAngle, label="correctedAngleDiff", linewidth = lineWidth, color='black')
+
     plt.title(name)
 
-    plt.legend()
+    fig.tight_layout()
+
+    ax1.legend(loc=0)
+    ax2.legend(loc=1)
 
     plt.savefig(destinationGraphFilePDF, bbox_inches='tight')
     plt.savefig(destinationGraphFileImage, bbox_inches='tight', dpi=600)
@@ -163,7 +227,8 @@ def log(name, text):
 # Do the initial pass.
 rows = readCSV(fileName)
 rowCount = len(rows)
-rows = calculateDiff(rows, 'long', 'lat', 'diff')
+rows = calculateDiff(rows, 'long', 'lat', 'diff', 'angle')
+# rows = calculateSimpleDiff(rows, 'angle', 'angleDiff')
 rows = calculateMean(rows, 'diff', 'meanDiff')
 rows = calculateSimpleDiff(rows, 'diff', 'diffdiff')
 rows = calculateMean(rows, 'diffdiff', 'meanDiffdiff')
@@ -214,10 +279,22 @@ for index, row in enumerate(rows):
 
 
 # Recalculate stuff.
-rows = calculateDiff(rows, 'correctedLong', 'correctedLat', 'correctedDiff')
+rows = calculateDiff(rows, 'correctedLong', 'correctedLat', 'correctedDiff', 'correctedAngle')
+# rows = calculateSimpleDiff(rows, 'correctedAngle', 'correctedAngleDiff')
 rows = calculateMean(rows, 'correctedDiff', 'correctedMeanDiff')
 rows = calculateSimpleDiff(rows, 'correctedDiff', 'correctedDiffdiff')
 rows = calculateMean(rows, 'correctedDiffdiff', 'correctedMeanDiffdiff')
+
+# Do some conversions
+angleConversions = ['angle', 'angleDiff', 'correctedAngle', 'correctedAngleDiff']
+# Expected to be used is srcField + 'IntPositiveCentered'. Eg 'angleIntPositiveCentered'.
+for srcField in angleConversions:
+    rows = toIntDegrees(rows, srcField, srcField + 'Int', 360, int(255/2))
+
+distanceConversions = ['diff', 'diffdiff', 'correctedDiff', 'correctedDiffdiff']
+# Expected to be used is srcField + 'ScaledInt'. Eg diffScaledInt.
+for srcField in distanceConversions:
+    rows = toIntDistance(rows, srcField, srcField + 'ScaledInt', 0.001, int(255/2))
 
 # Write out the basic stuff.
 log(name, "Write main CSV.")
