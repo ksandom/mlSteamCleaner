@@ -1,0 +1,12 @@
+#!/bin/bash
+# Extract desired data from all files.
+
+destination="data/raw"
+
+mkdir -p "$destination"
+
+while read -r file; do
+    name="$(echo "$file" | cut -d/ -f3)"
+    echo "Extract $name"
+    ./util/extractFromCSV "$name" "$file" "$destination"
+done < <(find data/apData -iname '*csv')

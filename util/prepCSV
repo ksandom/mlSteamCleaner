@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+# Prep a CSV file for usage.
+# Now that we are working with smaller files, we can just do everything in memory.
+
+import sys
+import csv
+import matplotlib.pyplot as plt
+
+name = sys.argv[1]
+fileName = sys.argv[2]
+sampleSize = int(sys.argv[3])
+destination = sys.argv[4]
+destinationGraphImage = sys.argv[5]
+destinationGraphPDF = sys.argv[6]
+destinationSamplesClean = sys.argv[7]
+destinationSamplesDirty = sys.argv[8]
+
+meanSize = 20
+threshold = 0.0007
+nThresholdValue = threshold * -1
+
+destinationFile = destination + "/" + name + ".csv"
+destinationGraphFileImage = destinationGraphImage + "/" + name + ".png"
+destinationGraphFilePDF = destinationGraphPDF + "/" + name + ".pdf"
+# print(destinationFile)
+
+
+def readCSV(fileName):
+    # Read the origin file.
+    rows = []
+    with open(fileName, newline='') as csvfileIn:
+        fieldnames = ['long', 'lat']
+        reader = csv.DictReader(csvfileIn)
+
+        for row in reader:
+            shouldSkip = False
+
+            if not row.get('long'):
+                shouldSkip = True
+            if not row.get('lat'):
+                shouldSkip = True
+
+            if shouldSkip:
+                print ("Skipping row that is missing data.")
+                continue
+
+            rows.append(row)
+
+            # print(row['default_latitude-deg'], row['default_longitude-deg'])
+            # keep = {'long': row['default_longitude-deg'], 'lat': row['default_latitude-deg']}
+
+    rowCount = len(rows)
+    if rowCount < 3:
+        print("Not enough rows to continue with " + name)
+        sys.exit()
+
+    return rows
+
+def writeCSV(fileName, rows):
+    # Write the destination file.
+    with open(fileName, 'w', newline='') as csvfileOut:
+        writer = csv.DictWriter(csvfileOut, fieldnames=rows[1].keys())
+        writer.writeheader()
+
+        for row in rows:
+            writer.writerow(row)
+
+def calculateDiff(rows, longField, latField, outField):
+    # Calculate diff.
+    for index, row in enumerate(rows):
+        if index == 0:
+            row[outField] = 0;
+            continue
+
+        longDiff = float(row[longField]) - float(rows[index - 1][longField])
+        latDiff = float(row[latField]) - float(rows[index - 1][latField])
+
+        c = (longDiff**2 + latDiff**2)**0.5
+
+        row[outField] = c
+
+    return rows
+
+def calculateMean(rows, inField, outField):
+    # Calculate mean.
+    for index, row in enumerate(rows):
+        if index == 0:
+            row[outField] = 0;
+            continue
+
+        halfMeanSize = round(meanSize / 2)
+        meanStart = index - halfMeanSize
+        meanStop = index + halfMeanSize
+
+        if meanStart < 1:
+            meanStart = 1
+
+        if meanStop > rowCount:
+            meanStop = rowCount
+
+        actualMeanSize = meanStop - meanStart
+        meanSum = 0
+
+        for meanPos in range(meanStart, meanStop):
+            meanSum += rows[meanPos][inField]
+
+        row[outField] = meanSum / actualMeanSize
+
+    return rows
+
+
+def calculateSimpleDiff(rows, inField, outField):
+    # Calculate diffdiff.
+    for index, row in enumerate(rows):
+        if index == 0:
+            row[outField] = 0;
+            continue
+
+        row[outField] = row[inField] - rows[index - 1][inField]
+
+    return rows
+
+def createGraph(destinationGraphFilePDF, destinationGraphFileImage, threshold, nThresholdValue, rows):
+    # Extract data for the graph.
+    # This could have been done while it was generated. But in the future, there are likely to be modifications to the data somewhere along the chain, and those modifications need to be reflected in the graph.
+    x = []
+    diffdiff = []
+    meanDiffdiff = []
+    correctedDiffdiff = []
+    pThreshold = []
+    nThreshold = []
+
+    for index, row in enumerate(rows):
+        x.append(index)
+        diffdiff.append(row['diffdiff'])
+        meanDiffdiff.append(row['meanDiffdiff'])
+        correctedDiffdiff.append(row['correctedDiffdiff'])
+
+        pThreshold.append(threshold)
+        nThreshold.append(nThresholdValue)
+
+    plt.plot(x, diffdiff, label="diffdiff")
+    plt.plot(x, meanDiffdiff, label="meanDiffdiff")
+    plt.plot(x, correctedDiffdiff, label="correctedDiffdiff")
+    plt.plot(x, pThreshold, label="pThreshold")
+    plt.plot(x, nThreshold, label="nThreshold")
+
+    plt.xlabel("Rows")
+    plt.ylabel("Amplitude")
+    plt.title(name)
+
+    plt.legend()
+
+    plt.savefig(destinationGraphFilePDF, bbox_inches='tight')
+    plt.savefig(destinationGraphFileImage, bbox_inches='tight', dpi=600)
+    # plt.show()
+
+def log(name, text):
+    print(name + ": " + text)
+
+
+
+# Do the initial pass.
+rows = readCSV(fileName)
+rowCount = len(rows)
+rows = calculateDiff(rows, 'long', 'lat', 'diff')
+rows = calculateMean(rows, 'diff', 'meanDiff')
+rows = calculateSimpleDiff(rows, 'diff', 'diffdiff')
+rows = calculateMean(rows, 'diffdiff', 'meanDiffdiff')
+
+
+# Primitive detection of bad points.
+for index, row in enumerate(rows):
+    row['failDirection'] = 0
+    row['corrected'] = 0
+    row['mark'] = ''
+    row['correctedLong'] = row['long']
+    row['correctedLat'] = row['lat']
+
+    if index == 0:
+        continue
+
+    if row['diffdiff'] > threshold:
+        row['failDirection'] = 1
+
+    if row['diffdiff'] < nThresholdValue:
+        row['failDirection'] = -1
+
+    if row['failDirection'] != 0:
+        oppositeDirection = row['failDirection'] * -1
+
+        # This relies on there being at least two assumptions from above:
+        # * index == 0 is skipped, which leaves failDirection at 0.
+        # * failDirection must not be 0 to get here.
+        #
+        # If either of these things are no longer true in the future, we may need to test for it.
+        if rows[index - 1]['failDirection'] == oppositeDirection:
+            # The error is correctable, and this point is probably not an error.
+            row['failDirection'] = 0;
+
+            pointToCorrect = index - 1
+            assumedPreviousGoodPoint = index - 2
+            rows[pointToCorrect]['correctedLong'] = (
+                float(rows[assumedPreviousGoodPoint]['correctedLong']) +
+                float(row['correctedLong'])) / 2
+            rows[pointToCorrect]['correctedLat'] = (
+                float(rows[assumedPreviousGoodPoint]['correctedLat']) +
+                float(row['correctedLat'])) / 2
+
+            rows[pointToCorrect]['mark'] = 'toCorrect'
+            rows[assumedPreviousGoodPoint]['mark'] = 'previous'
+            rows[pointToCorrect]['corrected'] = 1
+            row['corrected'] = 2
+
+
+# Recalculate stuff.
+rows = calculateDiff(rows, 'correctedLong', 'correctedLat', 'correctedDiff')
+rows = calculateMean(rows, 'correctedDiff', 'correctedMeanDiff')
+rows = calculateSimpleDiff(rows, 'correctedDiff', 'correctedDiffdiff')
+rows = calculateMean(rows, 'correctedDiffdiff', 'correctedMeanDiffdiff')
+
+# Write out the basic stuff.
+log(name, "Write main CSV.")
+writeCSV(destinationFile, rows)
+
+log(name, "Write main graphs.")
+createGraph(destinationGraphFilePDF, destinationGraphFileImage, threshold, nThresholdValue, rows)
+
+
+# Extract samples.
+log(name, "Extract samples.")
+cleanRows = 0
+cleanSamples = 0
+dirtySamples = 0
+nonViableSamples = 0
+print(name + ': ', end='')
+for index, row in enumerate(rows):
+    cleanEnough = (row['failDirection'] == 0 or row['corrected'] != 0)
+
+    # Track how good the previous samples have been.
+    if cleanEnough:
+        cleanRows += 1
+        threshold = sampleSize
+    else:
+        # If we have enougn samples, and only the last one is broken, we still want it.
+        threshold = sampleSize - 1
+
+    # Make sure we have enough samples.
+    if cleanRows < threshold:
+        print('.', end='')
+        nonViableSamples += 1
+        continue
+
+    # Choose destination.
+    sampleDestination = destinationSamplesClean
+    if row['failDirection'] == 0:
+        print('+', end='')
+        cleanSamples += 1
+    else:
+        print('-', end='')
+        dirtySamples += 1
+        sampleDestination = destinationSamplesDirty
+
+    # Collect the relevant samples.
+    relevantSamples = []
+    startPos = index - sampleSize + 1
+    endPos = index + 1
+    for relevantIndex in range(startPos, endPos):
+        relevantSamples.append(rows[relevantIndex])
+
+    # Write out data.
+    fileName = sampleDestination + '/' + name + '-' + str(startPos) + '-' + str(endPos)
+    fileCSV = fileName + '.csv'
+    writeCSV(fileCSV, relevantSamples)
+
+    # Reset tacking of good samples.
+    if not cleanEnough:
+        cleanRows = 0
+        continue
+
+print()
+print("{name}: Clean samples: {clean}   Dirty samples: {dirty}   Non-viable samples: {nonViable}".format(name=name, clean=cleanSamples, dirty=dirtySamples, nonViable=nonViableSamples))

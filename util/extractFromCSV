@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+# Extract just the fields we need from the CSVs.
+
+import sys
+import csv
+
+name = sys.argv[1]
+fileName = sys.argv[2]
+destination = sys.argv[3]
+destinationFile = destination + "/" + name + ".csv"
+# print(destinationFile)
+
+# From: https://docs.python.org/3/library/csv.html
+with open(fileName, newline='') as csvfileIn:
+    fieldnames = ['long', 'lat']
+
+    reader = csv.DictReader(csvfileIn)
+
+    with open(destinationFile, 'w', newline='') as csvfileOut:
+        writer = csv.DictWriter(csvfileOut, fieldnames=fieldnames)
+
+        writer.writeheader()
+
+        for row in reader:
+            if row['default_longitude-deg'] == '':
+                continue
+            if row['default_latitude-deg'] == '':
+                continue
+
+            keep = {'long': row['default_longitude-deg'], 'lat': row['default_latitude-deg']}
+            writer.writerow(keep)
+            # print(row['default_latitude-deg'], row['default_longitude-deg'])
