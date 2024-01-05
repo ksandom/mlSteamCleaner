@@ -7,6 +7,7 @@ import csv
 import math
 import matplotlib.pyplot as plt
 
+# Parameters from the command line.
 name = sys.argv[1]
 fileName = sys.argv[2]
 sampleSize = int(sys.argv[3])
@@ -18,7 +19,10 @@ destinationSamplesDirty = sys.argv[8]
 destinationSamplesGraphClean = sys.argv[9]
 destinationSamplesGraphDirty = sys.argv[10]
 
+# Moving mean size.
 meanSize = 20
+
+# Threshold for when a change is considered to be an error.
 threshold = 0.0007
 nThresholdValue = threshold * -1
 
@@ -35,12 +39,15 @@ createSignedGraph = True
 # Create a graph for every sample. EXTREMELY slow.
 createSampleGraphs = False
 
-
+# Where to save various stuff.
 destinationFile = destination + "/" + name + ".csv"
 destinationGraphFileImage = destinationGraphImage + "/" + name
 destinationGraphFilePDF = destinationGraphPDF + "/" + name
-# print(destinationFile)
 
+# Which fields to put into the sample files.
+fieldsToTake = ['long', 'lat', 'correctedLong', 'correctedLat', 'angleDiffInt', 'correctedAngleDiffInt', 'diffScaledInt', 'correctedDiffScaledInt', 'diff', 'angle']
+
+# Some loose maths stuff.
 pi = 3.14
 halfPi = pi/2
 
@@ -381,7 +388,6 @@ if createSignedGraph:
 # Take just what we need.
 log(name, "Take just what we need.")
 conciseRows = []
-fieldsToTake = ['long', 'lat', 'correctedLong', 'correctedLat', 'angleDiffInt', 'correctedAngleDiffInt', 'diffScaledInt', 'correctedDiffScaledInt', 'diff', 'angle']
 for index, row in enumerate(rows):
     newRow = {}
     for fieldIndex, field in enumerate(fieldsToTake):
