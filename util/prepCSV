@@ -342,6 +342,17 @@ createGenericGraph(
     rows)
 
 
+# Take just what we need.
+log(name, "Take just what we need.")
+conciseRows = []
+fieldsToTake = ['long', 'lat', 'correctedLong', 'correctedLat', 'angleDiffIntPositiveCentered', 'correctedAngleDiffIntPositiveCentered', 'diffdiffScaledIntCentered', 'correctedDiffdiffScaledIntCentered', 'diff', 'angle']
+for index, row in enumerate(rows):
+    newRow = {}
+    for fieldIndex, field in enumerate(fieldsToTake):
+        newRow[field] = row[field]
+
+    conciseRows.append(newRow)
+
 # Extract samples.
 log(name, "Extract samples.")
 cleanRows = 0
@@ -381,7 +392,7 @@ for index, row in enumerate(rows):
     startPos = index - sampleSize + 1
     endPos = index + 1
     for relevantIndex in range(startPos, endPos):
-        relevantSamples.append(rows[relevantIndex])
+        relevantSamples.append(conciseRows[relevantIndex])
 
     # Write out data.
     fileName = sampleDestination + '/' + name + '-' + str(startPos) + '-' + str(endPos)
