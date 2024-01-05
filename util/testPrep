@@ -1,0 +1,8 @@
+#!/bin/bash -ex
+# Test prep.
+
+file=2023-06-21-164058.csv
+testLocation=/tmp/testPrep
+mkdir -p "$testLocation/"{clean,dirty}
+
+time ./util/prepCSV test data/raw/$file 10 "$testLocation" "$testLocation" "$testLocation" "$testLocation"/clean "$testLocation"/dirty
