@@ -3,6 +3,8 @@
 
 file=2023-06-21-164058.csv
 testLocation=/tmp/testPrep
+
+rm -Rfv "$testLocation/"
 mkdir -p "$testLocation/"{clean,dirty}
 
-time ./util/prepCSV test data/raw/$file 10 "$testLocation" "$testLocation" "$testLocation" "$testLocation"/clean "$testLocation"/dirty
+time ./util/prepCSV test data/raw/$file 10 "$testLocation" "$testLocation" "$testLocation" "$testLocation"/clean "$testLocation"/dirty "$testLocation"/clean "$testLocation"/dirty

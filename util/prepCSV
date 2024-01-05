@@ -15,10 +15,26 @@ destinationGraphImage = sys.argv[5]
 destinationGraphPDF = sys.argv[6]
 destinationSamplesClean = sys.argv[7]
 destinationSamplesDirty = sys.argv[8]
+destinationSamplesGraphClean = sys.argv[9]
+destinationSamplesGraphDirty = sys.argv[10]
 
 meanSize = 20
 threshold = 0.0007
 nThresholdValue = threshold * -1
+
+# Create the float graph. - Useful for pre-transform debugging.
+createFloatGraph = False
+
+# Create the centered int graph.
+createCenteredGraph = False
+
+# Create the signed int graph.
+createSignedGraph = True
+
+
+# Create a graph for every sample. EXTREMELY slow.
+createSampleGraphs = False
+
 
 destinationFile = destination + "/" + name + ".csv"
 destinationGraphFileImage = destinationGraphImage + "/" + name
@@ -168,20 +184,21 @@ def toIntDistance(rows, inField, outField, inScale, outScale):
 
     return rows
 
-def createGenericGraph(outFileImage, outFilePDF, name, y1Label, y1Fields, y2Label, y2Fields, nThresholdValue, rows, threshold = 0):
+def createGenericGraph(outFileImage, outFilePDF, name, y1Label, y1Fields, y2Label, y2Fields, nThresholdValue, rows, threshold = 0, createPDF = True):
     # Extract data for the graph.
     # This could have been done while it was generated. But in the future, there are likely to be modifications to the data somewhere along the chain, and those modifications need to be reflected in the graph.
 
     y1FieldValues = {}
     y2FieldValues = {}
-    x = []
 
     nThresholdValue = threshold * -1
-    pThreshold = []
-    nThreshold = []
 
     for index, row in enumerate(rows):
         if index == 0:
+            x = []
+            pThreshold = []
+            nThreshold = []
+
             for index, field in enumerate(y1Fields):
                 y1FieldValues[field] = []
 
@@ -231,9 +248,13 @@ def createGenericGraph(outFileImage, outFilePDF, name, y1Label, y1Fields, y2Labe
     if len(y2Fields):
         ax2.legend(loc=1)
 
-    plt.savefig(outFilePDF + '.pdf', bbox_inches='tight')
     plt.savefig(outFileImage + '.png', bbox_inches='tight', dpi=600)
+
+    if createPDF:
+        plt.savefig(outFilePDF + '.pdf', bbox_inches='tight')
     # plt.show()
+
+    plt.close()
 
 def log(name, text):
     print(name + ": " + text)
@@ -310,42 +331,57 @@ for srcField in angleConversions:
 distanceConversions = ['diff', 'diffdiff', 'correctedDiff', 'correctedDiffdiff']
 # Expected to be used is srcField + 'ScaledInt'. Eg diffScaledInt.
 for srcField in distanceConversions:
-    rows = toIntDistance(rows, srcField, srcField + 'ScaledInt', 0.001, int(255/2))
+    rows = toIntDistance(rows, srcField, srcField + 'ScaledInt', 0.003, 255)
 
 # Write out the basic stuff.
 log(name, "Write main CSV.")
 writeCSV(destinationFile, rows)
 
-log(name, "Write main graphs. - Float")
-createGenericGraph(
-    destinationGraphFileImage,
-    destinationGraphFilePDF,
-    name + ' - Float values',
-    'Distance',
-    ['diffdiff', 'correctedDiffdiff'],
-    'Angle (Radians)',
-    ['angleDiff', 'correctedAngleDiff'],
-    nThresholdValue,
-    rows,
-    threshold)
+if createFloatGraph:
+    log(name, "Write main graphs. - Float")
+    createGenericGraph(
+        destinationGraphFileImage,
+        destinationGraphFilePDF,
+        name + ' - Float values',
+        'Distance',
+        ['diffdiff', 'correctedDiffdiff', 'diff', 'correctedDiff'],
+        'Angle (Radians)',
+        ['angleDiff', 'correctedAngleDiff'],
+        nThresholdValue,
+        rows,
+        threshold)
 
-log(name, "Write main graphs. - Int")
-createGenericGraph(
-    destinationGraphFileImage + 'Int',
-    destinationGraphFilePDF + 'Int',
-    name + ' - Integer values',
-    'Quantised',
-    ['angleDiffIntPositiveCentered', 'correctedAngleDiffIntPositiveCentered', 'diffdiffScaledIntCentered', 'correctedDiffdiffScaledIntCentered'],
-    'Unknown',
-    [],
-    nThresholdValue,
-    rows)
+if createCenteredGraph:
+    log(name, "Write main graphs. - Int centered")
+    createGenericGraph(
+        destinationGraphFileImage + 'IntCentered',
+        destinationGraphFilePDF + 'IntCentered',
+        name + ' - Integer centered',
+        'Quantised',
+        ['angleDiffIntPositiveCentered', 'correctedAngleDiffIntPositiveCentered', 'diffdiffScaledIntCentered', 'correctedDiffdiffScaledIntCentered'],
+        'Unknown',
+        [],
+        nThresholdValue,
+        rows)
+
+if createSignedGraph:
+    log(name, "Write main graphs. - Int signed")
+    createGenericGraph(
+        destinationGraphFileImage + 'IntSigned',
+        destinationGraphFilePDF + 'IntSigned',
+        name + ' - Integer signed',
+        'Quantised',
+        ['angleDiffInt', 'correctedAngleDiffInt', 'diffScaledInt', 'correctedDiffScaledInt'],
+        'Unknown',
+        [],
+        nThresholdValue,
+        rows)
 
 
 # Take just what we need.
 log(name, "Take just what we need.")
 conciseRows = []
-fieldsToTake = ['long', 'lat', 'correctedLong', 'correctedLat', 'angleDiffIntPositiveCentered', 'correctedAngleDiffIntPositiveCentered', 'diffdiffScaledIntCentered', 'correctedDiffdiffScaledIntCentered', 'diff', 'angle']
+fieldsToTake = ['long', 'lat', 'correctedLong', 'correctedLat', 'angleDiffInt', 'correctedAngleDiffInt', 'diffScaledInt', 'correctedDiffScaledInt', 'diff', 'angle']
 for index, row in enumerate(rows):
     newRow = {}
     for fieldIndex, field in enumerate(fieldsToTake):
@@ -379,6 +415,7 @@ for index, row in enumerate(rows):
 
     # Choose destination.
     sampleDestination = destinationSamplesClean
+    sampleGraphDestination = destinationSamplesGraphClean
     if row['failDirection'] == 0:
         print('+', end='')
         cleanSamples += 1
@@ -386,6 +423,7 @@ for index, row in enumerate(rows):
         print('-', end='')
         dirtySamples += 1
         sampleDestination = destinationSamplesDirty
+        sampleGraphDestination = destinationSamplesGraphDirty
 
     # Collect the relevant samples.
     relevantSamples = []
@@ -395,9 +433,24 @@ for index, row in enumerate(rows):
         relevantSamples.append(conciseRows[relevantIndex])
 
     # Write out data.
-    fileName = sampleDestination + '/' + name + '-' + str(startPos) + '-' + str(endPos)
+    sampleName = name + '-' + str(startPos) + '-' + str(endPos)
+    fileName = sampleDestination + '/' + sampleName
     fileCSV = fileName + '.csv'
     writeCSV(fileCSV, relevantSamples)
+
+    # Create a simple graph of this data.
+    if createSampleGraphs:
+        createGenericGraph(
+            fileName,
+            fileName,
+            'Sample: ' + sampleName,
+            'Quantised',
+            ['angleDiffInt', 'correctedAngleDiffInt', 'diffScaledInt', 'correctedDiffScaledInt'],
+            'Unknown',
+            [],
+            nThresholdValue,
+            relevantSamples,
+            createPDF=False)
 
     # Reset tracking of good samples.
     if not cleanEnough:

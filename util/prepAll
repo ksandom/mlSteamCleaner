@@ -6,12 +6,14 @@ destination="data/prepped"
 destinationGraphImages="data/graphImages"
 destinationGraphPDFs="data/graphPDFs"
 destinationSamplesClean="data/samples/clean/$sampleSize" # Has no errors.
+destinationSamplesGraphClean="data/samples/cleanGraphs/$sampleSize"
 destinationSamplesDirty="data/samples/dirty/$sampleSize" # Has an error.
+destinationSamplesGraphDirty="data/samples/dirtyGraphs/$sampleSize"
 
-mkdir -p "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesClean" "$destinationSamplesDirty"
+mkdir -p "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesClean" "$destinationSamplesDirty" "$destinationSamplesGraphClean" "$destinationSamplesGraphDirty"
 
 while read -r file; do
     name="$(echo "$file" | cut -d/ -f3)"
     echo "Prep $name"
-    ./util/prepCSV "$name" "$file" "$sampleSize" "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesClean" "$destinationSamplesDirty"
+    ./util/prepCSV "$name" "$file" "$sampleSize" "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesClean" "$destinationSamplesDirty" "$destinationSamplesGraphClean" "$destinationSamplesGraphDirty"
 done < <(find data/raw -iname '*csv')
