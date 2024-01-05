@@ -21,8 +21,8 @@ threshold = 0.0007
 nThresholdValue = threshold * -1
 
 destinationFile = destination + "/" + name + ".csv"
-destinationGraphFileImage = destinationGraphImage + "/" + name + ".png"
-destinationGraphFilePDF = destinationGraphPDF + "/" + name + ".pdf"
+destinationGraphFileImage = destinationGraphImage + "/" + name
+destinationGraphFilePDF = destinationGraphPDF + "/" + name
 # print(destinationFile)
 
 pi = 3.14
@@ -164,59 +164,75 @@ def toIntDistance(rows, inField, outField, inScale, outScale):
         if row[outField] < nOutScale:
             row[outField] = nOutScale
 
+        row[outField + 'Centered'] = row[outField] + outScale
+
     return rows
 
-def createGraph(destinationGraphFilePDF, destinationGraphFileImage, threshold, nThresholdValue, rows):
+def createGenericGraph(outFileImage, outFilePDF, name, y1Label, y1Fields, y2Label, y2Fields, nThresholdValue, rows, threshold = 0):
     # Extract data for the graph.
     # This could have been done while it was generated. But in the future, there are likely to be modifications to the data somewhere along the chain, and those modifications need to be reflected in the graph.
+
+    y1FieldValues = {}
+    y2FieldValues = {}
     x = []
-    diffdiff = []
-    meanDiffdiff = []
-    correctedDiffdiff = []
-    angle = []
-    correctedAngle = []
+
+    nThresholdValue = threshold * -1
     pThreshold = []
     nThreshold = []
 
     for index, row in enumerate(rows):
+        if index == 0:
+            for index, field in enumerate(y1Fields):
+                y1FieldValues[field] = []
+
+            for index, field in enumerate(y2Fields):
+                y2FieldValues[field] = []
+
         x.append(index)
-        diffdiff.append(row['diffdiff'])
-        meanDiffdiff.append(row['meanDiffdiff'])
-        correctedDiffdiff.append(row['correctedDiffdiff'])
 
-        angle.append(row['angleDiff'])
-        correctedAngle.append(row['correctedAngleDiff'])
+        for index, field in enumerate(y1Fields):
+            y1FieldValues[field].append(row[field])
 
-        pThreshold.append(threshold)
-        nThreshold.append(nThresholdValue)
+        for index, field in enumerate(y2Fields):
+            y2FieldValues[field].append(row[field])
+
+        if threshold:
+            pThreshold.append(threshold)
+            nThreshold.append(nThresholdValue)
 
     fig, ax1 = plt.subplots()
 
     # Primary y-axis.
     lineWidth = 0.5
     ax1.set_xlabel('Rows')
-    ax1.set_ylabel('Aplitude')
-    ax1.plot(x, diffdiff, linewidth = lineWidth, label="diffdiff")
-    ax1.plot(x, meanDiffdiff, linewidth = lineWidth, label="meanDiffdiff")
-    ax1.plot(x, correctedDiffdiff, linewidth = lineWidth, label="correctedDiffdiff")
-    ax1.plot(x, pThreshold, linewidth = lineWidth, label="pThreshold")
-    ax1.plot(x, nThreshold, linewidth = lineWidth, label="nThreshold")
+    ax1.set_ylabel(y1Label)
+
+    if threshold:
+        ax1.plot(x, pThreshold, linewidth = lineWidth, label="pThreshold")
+        ax1.plot(x, nThreshold, linewidth = lineWidth, label="nThreshold")
+
+    for index, field in enumerate(y1Fields):
+        ax1.plot(x, y1FieldValues[field], linewidth = lineWidth, label=field)
 
     # Secondary y-axis.
-    ax2 = ax1.twinx()
-    ax2.set_ylabel('Angle (Radians)')
-    ax2.plot(x, angle, label="angleDiff", linewidth = lineWidth, color='cyan')
-    ax2.plot(x, correctedAngle, label="correctedAngleDiff", linewidth = lineWidth, color='black')
+    if len(y2Fields):
+        ax2 = ax1.twinx()
+        ax2.set_ylabel(y2Label)
+
+        for index, field in enumerate(y2Fields):
+            ax2.plot(x, y2FieldValues[field], linewidth = lineWidth, label=field)
 
     plt.title(name)
 
     fig.tight_layout()
 
     ax1.legend(loc=0)
-    ax2.legend(loc=1)
 
-    plt.savefig(destinationGraphFilePDF, bbox_inches='tight')
-    plt.savefig(destinationGraphFileImage, bbox_inches='tight', dpi=600)
+    if len(y2Fields):
+        ax2.legend(loc=1)
+
+    plt.savefig(outFilePDF + '.pdf', bbox_inches='tight')
+    plt.savefig(outFileImage + '.png', bbox_inches='tight', dpi=600)
     # plt.show()
 
 def log(name, text):
@@ -300,8 +316,30 @@ for srcField in distanceConversions:
 log(name, "Write main CSV.")
 writeCSV(destinationFile, rows)
 
-log(name, "Write main graphs.")
-createGraph(destinationGraphFilePDF, destinationGraphFileImage, threshold, nThresholdValue, rows)
+log(name, "Write main graphs. - Float")
+createGenericGraph(
+    destinationGraphFileImage,
+    destinationGraphFilePDF,
+    name + ' - Float values',
+    'Distance',
+    ['diffdiff', 'correctedDiffdiff'],
+    'Angle (Radians)',
+    ['angleDiff', 'correctedAngleDiff'],
+    nThresholdValue,
+    rows,
+    threshold)
+
+log(name, "Write main graphs. - Int")
+createGenericGraph(
+    destinationGraphFileImage + 'Int',
+    destinationGraphFilePDF + 'Int',
+    name + ' - Integer values',
+    'Quantised',
+    ['angleDiffIntPositiveCentered', 'correctedAngleDiffIntPositiveCentered', 'diffdiffScaledIntCentered', 'correctedDiffdiffScaledIntCentered'],
+    'Unknown',
+    [],
+    nThresholdValue,
+    rows)
 
 
 # Extract samples.
