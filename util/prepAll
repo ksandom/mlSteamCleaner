@@ -5,10 +5,10 @@ sampleSize=10
 destination="data/prepped"
 destinationGraphImages="data/graphImages"
 destinationGraphPDFs="data/graphPDFs"
-destinationSamplesClean="data/samples/clean/$sampleSize" # Has no errors.
-destinationSamplesGraphClean="data/samples/cleanGraphs/$sampleSize"
-destinationSamplesDirty="data/samples/dirty/$sampleSize" # Has an error.
-destinationSamplesGraphDirty="data/samples/dirtyGraphs/$sampleSize"
+destinationSamplesClean="data/samples/$sampleSize/clean" # Has no errors.
+destinationSamplesGraphClean="data/samples/$sampleSize/cleanGraphs"
+destinationSamplesDirty="data/samples/$sampleSize/dirty" # Has an error.
+destinationSamplesGraphDirty="data/samples/$sampleSize/dirtyGraphs"
 
 mkdir -p "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesClean" "$destinationSamplesDirty" "$destinationSamplesGraphClean" "$destinationSamplesGraphDirty"
 
