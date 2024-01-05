@@ -354,7 +354,7 @@ for index, row in enumerate(rows):
     conciseRows.append(newRow)
 
 # Extract samples.
-log(name, "Extract samples.")
+log(name, "Extract samples:")
 cleanRows = 0
 cleanSamples = 0
 dirtySamples = 0
