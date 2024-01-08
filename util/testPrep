@@ -7,4 +7,4 @@ testLocation=/tmp/testPrep
 rm -Rfv "$testLocation/"
 mkdir -p "$testLocation/"{clean,dirty}
 
-time ./util/prep_csv test data/raw/$file 10 "$testLocation" "$testLocation" "$testLocation" "$testLocation"/clean "$testLocation"/dirty "$testLocation"/clean "$testLocation"/dirty
+time ./util/prep_csv.py test data/raw/$file 10 "$testLocation" "$testLocation" "$testLocation" "$testLocation"/clean "$testLocation"/dirty "$testLocation"/clean "$testLocation"/dirty

@@ -8,5 +8,5 @@ mkdir -p "$destination"
 while read -r file; do
     name="$(echo "$file" | cut -d/ -f3)"
     echo "Extract $name"
-    ./util/extract_from_csv "$name" "$file" "$destination"
+    ./util/extract_from_csv.py "$name" "$file" "$destination"
 done < <(find data/apData -iname '*csv')

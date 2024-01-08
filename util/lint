@@ -1,5 +1,5 @@
 #!/bin/bash
 # Lint everything.
 
-pylint ./util/extract_from_csv
-pylint ./util/prep_csv
+pylint ./util/extract_from_csv.py
+pylint ./util/prep_csv.py
