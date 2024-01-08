@@ -188,7 +188,12 @@ def to_int_degrees(rows, in_field, out_field, inScale, out_scale):
         if row[out_field] < n_out_scale:
             row[out_field] = n_out_scale
 
-        row[out_field + 'PositiveCentered'] = row[out_field] + out_scale # Expected field to be used.
+        n_key = out_field + "N"
+        row[n_key] = row[out_field] * -1
+
+         # Expected fields to be used.
+        row[out_field + 'PositiveCentered'] = row[out_field] + out_scale
+        row[out_field + 'PositiveCenteredN'] = row[n_key] + out_scale
 
     return rows
 
@@ -206,7 +211,10 @@ def to_int_distance(rows, in_field, out_field, inScale, out_scale):
         if row[out_field] < n_out_scale:
             row[out_field] = n_out_scale
 
+        row[out_field + "N"] = row[out_field] * -1
+
         row[out_field + 'Centered'] = row[out_field] + out_scale
+        row[out_field + 'CenteredN'] = row[out_field + "N"] + out_scale
 
     return rows
 
@@ -365,7 +373,7 @@ for src_field in angle_conversions:
 distance_conversions = ['diff', 'diffdiff', 'correctedDiff', 'correctedDiffdiff']
 # Expected to be used is src_field + 'ScaledInt'. Eg diffScaledInt.
 for src_field in distance_conversions:
-    root_rows = to_int_distance(root_rows, src_field, src_field + 'ScaledInt', 0.003, 255)
+    root_rows = to_int_distance(root_rows, src_field, src_field + 'ScaledInt', 0.003, int(255/2))
 
 # Write out the basic stuff.
 log(name, "Write main CSV.")
@@ -378,9 +386,17 @@ if create_float_graph:
         destination_graph_file_pdf,
         name + ' - Float values',
         'Distance',
-        ['diffdiff', 'correctedDiffdiff', 'diff', 'correctedDiff'],
+        [
+            'diffdiff',
+            'correctedDiffdiff',
+            'diff',
+            'correctedDiff'
+        ],
         'Angle (Radians)',
-        ['angleDiff', 'correctedAngleDiff'],
+        [
+            'angleDiff',
+            'correctedAngleDiff'
+        ],
         root_rows,
         threshold)
 
@@ -391,7 +407,16 @@ if create_centered_graph:
         destination_graph_file_pdf + 'IntCentered',
         name + ' - Integer centered',
         'Quantised',
-        ['angleDiffIntPositiveCentered', 'correctedAngleDiffIntPositiveCentered', 'diffdiffScaledIntCentered', 'correctedDiffdiffScaledIntCentered'],
+        [
+            'angleDiffIntPositiveCentered',
+            'correctedAngleDiffIntPositiveCentered',
+            'diffdiffScaledIntCentered',
+            'correctedDiffdiffScaledIntCentered',
+            # 'angleDiffIntPositiveCenteredN',
+            # 'correctedAngleDiffIntPositiveCenteredN',
+            # 'diffdiffScaledIntCenteredN',
+            # 'correctedDiffdiffScaledIntCenteredN'
+        ],
         'Empty',
         [],
         root_rows)
@@ -403,7 +428,16 @@ if create_signed_graph:
         destination_graph_file_pdf + 'IntSigned',
         name + ' - Integer signed',
         'Quantised',
-        ['angleDiffInt', 'correctedAngleDiffInt', 'diffScaledInt', 'correctedDiffScaledInt'],
+        [
+            'angleDiffInt',
+            'correctedAngleDiffInt',
+            'diffScaledInt',
+            'correctedDiffScaledInt',
+            # 'angleDiffIntN',
+            # 'correctedAngleDiffIntN',
+            # 'diffScaledIntN',
+            # 'correctedDiffScaledIntN'
+        ],
         'Empty',
         [],
         root_rows)
@@ -475,7 +509,12 @@ for root_index, root_row in enumerate(root_rows):
             file_name,
             'Sample: ' + sample_name,
             'Quantised',
-            ['angleDiffInt', 'correctedAngleDiffInt', 'diffScaledInt', 'correctedDiffScaledInt'],
+            [
+                'angleDiffInt',
+                'correctedAngleDiffInt',
+                'diffScaledInt',
+                'correctedDiffScaledInt'
+            ],
             'Unknown',
             [],
             relevant_samples,
