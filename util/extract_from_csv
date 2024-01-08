@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-# Extract just the fields we need from the CSVs.
+""" Extract just the fields we need from the CSVs. """
 
 import sys
 import csv
 
 name = sys.argv[1]
-fileName = sys.argv[2]
+file_name = sys.argv[2]
 destination = sys.argv[3]
-destinationFile = destination + "/" + name + ".csv"
-# print(destinationFile)
+destination_file = destination + "/" + name + ".csv"
+# print(destination_file)
 
 # From: https://docs.python.org/3/library/csv.html
-with open(fileName, newline='') as csvfileIn:
+with open(file_name, newline='', encoding="utf-8") as csv_file_in:
     fieldnames = ['long', 'lat']
 
-    reader = csv.DictReader(csvfileIn)
+    reader = csv.DictReader(csv_file_in)
 
-    with open(destinationFile, 'w', newline='') as csvfileOut:
-        writer = csv.DictWriter(csvfileOut, fieldnames=fieldnames)
+    with open(destination_file, 'w', newline='', encoding="utf-8") as csv_file_out:
+        writer = csv.DictWriter(csv_file_out, fieldnames=fieldnames)
 
         writer.writeheader()
 
