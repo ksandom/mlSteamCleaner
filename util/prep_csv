@@ -58,7 +58,7 @@ fields_to_take = [
     'angle']
 
 # Some loose maths stuff.
-pi = 3.14
+pi = math.pi
 half_pi = pi/2
 
 
