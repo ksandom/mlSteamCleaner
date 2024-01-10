@@ -29,6 +29,7 @@ class TrainRecognition:
         self.build_model()
         self.fit()
         self.predict()
+        self.save()
 
     def build_model(self):
         self.debug.log("Build model.")
@@ -52,4 +53,4 @@ class TrainRecognition:
 
     def save(self):
         self.debug.log("Save: " + self.name)
-        self.model.save(self.name)
+        self.model.save("models/" + self.name)
