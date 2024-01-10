@@ -1,0 +1,10 @@
+#!/bin/bash -ex
+# Combine files into loadable sets.
+
+for samples in ./data/samples/10; do
+    for set in A B; do
+        ./util/combine_csvs.py $samples/$set $samples/combinedBinary$set.csv
+    done
+
+    ls -lh "$samples"
+done

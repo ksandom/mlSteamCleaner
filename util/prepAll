@@ -5,15 +5,18 @@ sampleSize=10
 destination="data/prepped"
 destinationGraphImages="data/graphImages"
 destinationGraphPDFs="data/graphPDFs"
+destinationSamplesBinary="data/samples/$sampleSize"
 destinationSamplesClean="data/samples/$sampleSize/clean" # Has no errors.
 destinationSamplesGraphClean="data/samples/$sampleSize/cleanGraphs"
 destinationSamplesDirty="data/samples/$sampleSize/dirty" # Has an error.
 destinationSamplesGraphDirty="data/samples/$sampleSize/dirtyGraphs"
 
-mkdir -p "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesClean" "$destinationSamplesDirty" "$destinationSamplesGraphClean" "$destinationSamplesGraphDirty"
+mkdir -p "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesBinary"/{A,B} "$destinationSamplesClean" "$destinationSamplesDirty" "$destinationSamplesGraphClean" "$destinationSamplesGraphDirty"
 
 while read -r file; do
     name="$(echo "$file" | cut -d/ -f3)"
     echo "Prep $name"
-    ./util/prep_csv.py "$name" "$file" "$sampleSize" "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesClean" "$destinationSamplesDirty" "$destinationSamplesGraphClean" "$destinationSamplesGraphDirty"
+    ./util/prep_csv.py "$name" "$file" "$sampleSize" "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesBinary" "$destinationSamplesClean" "$destinationSamplesDirty" "$destinationSamplesGraphClean" "$destinationSamplesGraphDirty"
 done < <(find data/raw -iname '*csv')
+
+./util/combineAll

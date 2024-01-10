@@ -14,10 +14,11 @@ sample_size = int(sys.argv[3])
 destination = sys.argv[4]
 destination_graph_image = sys.argv[5]
 destination_graph_pdf = sys.argv[6]
-destination_samples_clean = sys.argv[7]
-destination_samples_dirty = sys.argv[8]
-destination_samples_graph_clean = sys.argv[9]
-destination_samples_graph_dirty = sys.argv[10]
+destination_samples_binary = sys.argv[7]
+destination_samples_clean = sys.argv[8]
+destination_samples_dirty = sys.argv[9]
+destination_samples_graph_clean = sys.argv[10]
+destination_samples_graph_dirty = sys.argv[11]
 
 # Moving mean size.
 mean_size = 20
@@ -51,11 +52,25 @@ fields_to_take = [
     'correctedLong',
     'correctedLat',
     'angleDiffInt',
+    'angleDiffIntPositiveCentered',
     'correctedAngleDiffInt',
+    'correctedAngleDiffIntPositiveCentered',
     'diffScaledInt',
     'correctedDiffScaledInt',
     'diff',
     'angle']
+
+# Which fields to put into the combined samples file.
+combined_fields_to_take = [
+    # 'long',
+    # 'lat',
+    # 'correctedLong',
+    # 'correctedLat',
+    'angleDiffIntPositiveCentered',
+    'diffScaledInt',
+    'correctedAngleDiffIntPositiveCentered',
+    'correctedDiffScaledInt'
+    ]
 
 # Some loose maths stuff.
 pi = math.pi
@@ -100,6 +115,10 @@ def read_csv(in_file_name):
 
 def write_csv(out_file_name, rows):
     """ Write the destination file. """
+
+    if len(rows) < 2:
+        print("No rows for " + out_file_name + ". Skipping.")
+        return
 
     with open(out_file_name, 'w', newline='', encoding="utf-8") as csv_file_out:
         writer = csv.DictWriter(csv_file_out, fieldnames=rows[1].keys())
@@ -297,6 +316,38 @@ def create_generic_graph(out_file_image, out_file_pdf, graph_name, y1_label, y1_
 
     plt.close()
 
+def number_to_binary(number):
+    return str(bin(number))[2:].rjust(8, '0')[-8:]
+
+def rows_to_binary_row(rows, which_fields_to_take, good):
+    combined_row = {}
+
+    # These first two loops could be swapped. I've put them this way around in the hopes that
+    # the bits of a field will be put together in the final CSV.
+    for _, field_name in enumerate(which_fields_to_take):
+        for index, row in enumerate(rows):
+            bits = number_to_binary(row[field_name])
+
+            for pos in range(0, 8):
+                final_field_name = field_name + '_' + str(index) + '_' + str(pos)
+                combined_row[final_field_name] = bits[pos:pos + 1]
+
+                if combined_row[final_field_name] == 'b':
+                    print("There's an error in the data. Negative values?")
+                    print(bits)
+                    print(index)
+                    print(pos)
+                    print(final_field_name)
+                    print(row[field_name])
+                    sys.exit(1)
+
+    good_value = 0
+    if (good): good_value = 1
+    combined_row['good'] = good_value
+
+    return combined_row
+
+
 def log(data_name, text):
     """ Print debugging output in a consistent way. """
     print(data_name + ": " + text)
@@ -459,9 +510,14 @@ clean_rows = 0
 clean_samples = 0
 dirty_samples = 0
 non_viable_samples = 0
+binary_rows = {
+    "A" : [],
+    "B" : []
+    }
 print(name + ': ', end='')
 for root_index, root_row in enumerate(root_rows):
-    cleanEnough = (root_row['failDirection'] == 0 or root_row['corrected'] != 0)
+    root_good = root_row['failDirection'] == 0
+    cleanEnough = (root_good or root_row['corrected'] != 0)
 
     # Track how good the previous samples have been.
     if cleanEnough:
@@ -478,13 +534,18 @@ for root_index, root_row in enumerate(root_rows):
         continue
 
     # Choose destination.
-    sample_destination = destination_samples_clean
-    sample_graph_destination = destination_samples_graph_clean
-    if root_row['failDirection'] == 0:
-        print('+', end='')
-        clean_samples += 1
+    if root_index % 2 == 0:
+        group = "A"
     else:
-        print('-', end='')
+        group = "B"
+
+    if root_row['failDirection'] == 0:
+        print('+', end='', flush=True)
+        clean_samples += 1
+        sample_destination = destination_samples_clean
+        sample_graph_destination = destination_samples_graph_clean
+    else:
+        print('-', end='', flush=True)
         dirty_samples += 1
         sample_destination = destination_samples_dirty
         sample_graph_destination = destination_samples_graph_dirty
@@ -496,9 +557,13 @@ for root_index, root_row in enumerate(root_rows):
     for relevantIndex in range(start_pos, end_pos):
         relevant_samples.append(concise_rows[relevantIndex])
 
+    # Create binary rows for later use.
+    binary_row = rows_to_binary_row(relevant_samples, combined_fields_to_take, root_good)
+    binary_rows[group].append(binary_row)
+
     # Write out data.
     sample_name = name + '-' + str(start_pos) + '-' + str(end_pos)
-    file_name = sample_destination + '/' + sample_name
+    file_name = sample_destination + '/' + sample_name + '-' + group
     file_csv = file_name + '.csv'
     write_csv(file_csv, relevant_samples)
 
@@ -524,6 +589,13 @@ for root_index, root_row in enumerate(root_rows):
     if not cleanEnough:
         clean_rows = 0
         continue
-
 print()
+
+# Write binary data.
+log(name, "Write binary data.")
+for _, set_name in enumerate(binary_rows):
+    file_name = destination_samples_binary + '/' + set_name + '/' + name
+    file_csv = file_name + '.csv'
+    write_csv(file_csv, binary_rows[set_name])
+
 print(f"{name}: Clean samples: {clean_samples}   Dirty samples: {dirty_samples}   Non-viable samples: {non_viable_samples}")
