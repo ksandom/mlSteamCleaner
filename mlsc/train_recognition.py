@@ -28,6 +28,7 @@ class TrainRecognition:
 
         self.build_model()
         self.fit()
+        print()
         self.predict()
         self.save()
 
@@ -49,7 +50,7 @@ class TrainRecognition:
         y_hat = self.model.predict(self.x_test)
         y_hat = [0 if val < 0.5 else 1 for val in y_hat]
 
-        print(accuracy_score(self.y_test, y_hat))
+        print("accuracy_score: " + str(accuracy_score(self.y_test, y_hat)))
 
     def save(self):
         self.debug.log("Save: " + self.name)
