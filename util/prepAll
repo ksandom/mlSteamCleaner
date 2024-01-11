@@ -11,7 +11,7 @@ destinationSamplesGraphClean="data/samples/$sampleSize/cleanGraphs"
 destinationSamplesDirty="data/samples/$sampleSize/dirty" # Has an error.
 destinationSamplesGraphDirty="data/samples/$sampleSize/dirtyGraphs"
 
-mkdir -p "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesBinary"/{A,B} "$destinationSamplesClean" "$destinationSamplesDirty" "$destinationSamplesGraphClean" "$destinationSamplesGraphDirty" models
+mkdir -p "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesBinary"/{A,B,C} "$destinationSamplesClean" "$destinationSamplesDirty" "$destinationSamplesGraphClean" "$destinationSamplesGraphDirty" models
 
 while read -r file; do
     name="$(echo "$file" | cut -d/ -f3)"

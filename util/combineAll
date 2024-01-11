@@ -1,10 +1,16 @@
-#!/bin/bash -ex
+#!/bin/bash
 # Combine files into loadable sets.
 
 for samples in ./data/samples/10; do
-    for set in A B; do
+    for set in A B C; do
         ./util/combine_csvs.py $samples/$set $samples/combinedBinary$set.csv
     done
 
-    ls -lh "$samples"
+
+    for set in A B C; do
+        file="$samples/combinedBinary$set.csv"
+
+        ls -lh "$file"
+        sed 's/.*,//g' "$file" | sort | uniq -c | grep -v good
+    done
 done

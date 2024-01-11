@@ -30,11 +30,6 @@ def read_csv(in_file_name):
             # print(row['default_latitude-deg'], row['default_longitude-deg'])
             # keep = {'long': row['default_longitude-deg'], 'lat': row['default_latitude-deg']}
 
-    sub_row_count = len(rows)
-    if sub_row_count < 3:
-        print("Not enough rows to continue with " + name)
-        sys.exit()
-
     return rows
 
 def write_csv(out_file_name, rows):

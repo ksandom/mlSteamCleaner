@@ -60,7 +60,11 @@ fields_to_take = [
     'diff',
     'angle']
 
-# Which fields to put into the combined samples file.
+# What percentage of samples to put in A.
+ab_split = 0.8
+ab_split_negative = 1 - ab_split
+
+# Which fields to put into the combined binary samples file.
 combined_fields_to_take = [
     # 'long',
     # 'lat',
@@ -512,7 +516,8 @@ dirty_samples = 0
 non_viable_samples = 0
 binary_rows = {
     "A" : [],
-    "B" : []
+    "B" : [],
+    "C" : []
     }
 print(name + ': ', end='')
 for root_index, root_row in enumerate(root_rows):
@@ -534,11 +539,6 @@ for root_index, root_row in enumerate(root_rows):
         continue
 
     # Choose destination.
-    if root_index % 2 == 0:
-        group = "A"
-    else:
-        group = "B"
-
     if root_row['failDirection'] == 0:
         print('+', end='', flush=True)
         clean_samples += 1
@@ -558,8 +558,25 @@ for root_index, root_row in enumerate(root_rows):
         relevant_samples.append(concise_rows[relevantIndex])
 
     # Create binary rows for later use.
-    binary_row = rows_to_binary_row(relevant_samples, combined_fields_to_take, root_good)
-    binary_rows[group].append(binary_row)
+    if len(binary_rows['A']) * ab_split_negative < len(binary_rows['B']) * ab_split:
+        group = "A"
+    else:
+        group = "B"
+
+    if cleanEnough:
+        should_add = (not root_good) # Always add the cleanEnough bad ones.
+        if root_index % sample_size == 0:
+            # Always add a cleanEnough sample regardless if it's 1 in every sample_size samples.
+            should_add = True
+
+        if not should_add:
+            # Collect excluded items in group C.
+            group = "C"
+
+        binary_row = rows_to_binary_row(relevant_samples, combined_fields_to_take, root_good)
+        binary_rows[group].append(binary_row)
+    else:
+        should_add = False
 
     # Write out data.
     sample_name = name + '-' + str(start_pos) + '-' + str(end_pos)
