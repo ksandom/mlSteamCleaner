@@ -5,6 +5,6 @@ file=2023-06-21-164058.csv
 testLocation=/tmp/testPrep
 
 rm -Rfv "$testLocation/"
-mkdir -vp "$testLocation/"{clean,dirty}
+mkdir -vp "$testLocation/"{clean,dirty,A,B,C,angleA,angleB,angleC}
 
 time ./util/prep_csv.py test data/raw/$file 10 "$testLocation" "$testLocation" "$testLocation" "$testLocation" "$testLocation"/clean "$testLocation"/dirty "$testLocation"/clean "$testLocation"/dirty
