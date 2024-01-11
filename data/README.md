@@ -4,11 +4,12 @@ Eventually, you'll end up with data like this:
 
 ```bash
 ksandom@delli:~/files/develop/mlSteamCleaner/data$ du -sh *
-123M    graphImages
-6.8M    graphPDFs
-32M     prepped
 3.9M    raw
-498M    samples
+66M     prepped
+189M    graphImages
+5.3M    graphPDFs
+4.0K    README.md
+1.2G    samples
 ```
 
 | Name | What is it? |
