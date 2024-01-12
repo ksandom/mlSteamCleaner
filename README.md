@@ -65,3 +65,21 @@ accuracy_score: 0.9922519370157461
 
 **Expected time:** ~2 minutes on 2018 hardware.
 
+### Using your own data
+
+If you'd like to try the models on your own data, you can place it in data/raw before doing the [Prep the data for use](#prep-the-data-for-use) steps.
+
+Overview:
+
+1. Place data that you want to import into the data/raw directory.
+1. Do the [Prep the data for use](#prep-the-data-for-use) steps.
+
+The data that you place in the data/raw directory must be:
+
+* CSV files (as many as you want).
+* Contain the following fields:
+    * `long`
+    * `lat`
+    * Anything else will be ignored.
+
+You can use `./util/extraAll` to create these files. Note that it is set up for my data source, where these fields are originally called `default_longitude-deg` and `default_latitude-deg`. So you'll likely need to adapt it to your needs.
