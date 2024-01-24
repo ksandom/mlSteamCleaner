@@ -23,10 +23,23 @@ with open(file_name, newline='', encoding="utf-8") as csv_file_in:
 
         for row in reader:
             if row['default_longitude-deg'] == '':
+                print(' ', end='', flush=True)
                 continue
             if row['default_latitude-deg'] == '':
+                print(' ', end='', flush=True)
                 continue
+
+            if 'default_airspeed-kt' in row:
+                if row['default_airspeed-kt'] == '':
+                    print(' ', end='', flush=True)
+                    continue
+                if float(row['default_airspeed-kt']) < 10:
+                    print('-', end='', flush=True)
+                    continue
+
+            print('.', end='', flush=True)
 
             keep = {'long': row['default_longitude-deg'], 'lat': row['default_latitude-deg']}
             writer.writerow(keep)
             # print(row['default_latitude-deg'], row['default_longitude-deg'])
+        print('|')
