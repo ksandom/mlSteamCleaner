@@ -49,8 +49,10 @@ df_test = pd.read_csv(test_data)
 x_test = pd.get_dummies(df_test.drop([answer_field], axis=1))
 y_test = df_test[answer_field]
 
-print (x_train.head())
-print (y_train.head())
+print(x_train.head())
+print(y_train.head())
 
 train_prediction = TrainPrediction(model_file, x_train, x_test, y_train, y_test, df_test)
 train_prediction.train()
+
+print("Test size: " + str(len(y_test)))

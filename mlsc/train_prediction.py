@@ -143,12 +143,13 @@ class TrainPrediction:
         # plt.figure()
         plt.close()
         a = plt.axes(aspect='equal')
+        test_size = len(test_predictions)
         print(len(self.x_test), len(test_predictions))
-        plt.scatter(self.y_test, test_predictions)
+        plt.scatter(self.y_test, test_predictions, s=1)
         plt.xlabel('True Values')
         plt.ylabel('Predictions')
-        lims = [0, 1.5]
-        plt.title('Predictions vs reality for ' + str(self.epochs) + ' epochs')
+        lims = [0, 1]
+        plt.title('Reality check. ' + str(self.epochs) + ' epochs. Test size: ' + str(test_size))
         plt.xlim(lims)
         plt.ylim(lims)
         _ = plt.plot(lims, lims)
