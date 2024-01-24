@@ -2,7 +2,8 @@
 """
 Train based on the dataset in data/
 
-Loosely based on https://www.youtube.com/watch?v=6_2hzRopPbQ
+Loosely based on https://www.youtube.com/watch?v=6_2hzRopPbQ and
+https://github.com/nicknochnack/Tensorflow-in-10-Minutes
 
 Syntax:
 ./train_recognition.py modelFile trainData testData

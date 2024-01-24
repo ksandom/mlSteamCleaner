@@ -1,7 +1,8 @@
 #!/bin/bash -ex
 # Test prep.
 
-file=2023-06-21-164058.csv
+#file=2023-06-21-164058.csv
+file=2023-06-23-123435-largerRunBigOscillations.csv
 testLocation=/tmp/testPrep
 
 rm -Rfv "$testLocation/"

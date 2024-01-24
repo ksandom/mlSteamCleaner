@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 name = sys.argv[1]
 file_name = sys.argv[2]
 sample_size = int(sys.argv[3])
+sample_size_fit = sample_size - 1
 destination = sys.argv[4]
 destination_graph_image = sys.argv[5]
 destination_graph_pdf = sys.argv[6]
@@ -26,6 +27,8 @@ mean_size = 20
 # Threshold for when a change is considered to be an error.
 threshold = 0.0007
 n_threshold_value = threshold * -1
+angle_threshold = 1
+n_angle_threshold = angle_threshold * -1
 
 # Create the float graph. - Useful for pre-transform debugging.
 create_float_graph = False
@@ -34,7 +37,10 @@ create_float_graph = False
 create_centered_graph = False
 
 # Create the signed int graph.
-create_signed_graph = True
+create_signed_graph = False
+
+# Create the normalised angles graph.
+create_normalised_angles_graph = False
 
 
 # Create a graph for every sample. EXTREMELY slow.
@@ -58,6 +64,8 @@ fields_to_take = [
     'diffScaledInt',
     'correctedDiffScaledInt',
     'diff',
+    'angleDiffDiff',
+    'angleDiff',
     'angle']
 
 # What percentage of samples to put in A.
@@ -65,7 +73,7 @@ ab_split = 0.8
 ab_split_negative = 1 - ab_split
 
 # Which fields to put into the combined binary samples file.
-combined_fields_to_take = [
+combined_binary_fields_to_take = [
     # 'long',
     # 'lat',
     # 'correctedLong',
@@ -76,10 +84,20 @@ combined_fields_to_take = [
     'correctedDiffScaledInt'
     ]
 
+# # Which fields to put into the combined binary samples file.
+combined_angle_fields_to_take = [
+    'angleDiffDiff'
+    ]
+
+cutOff = 80
+nCutOff = cutOff * -1
+
 # Some loose maths stuff.
 pi = math.pi
 half_pi = pi/2
 
+# Scale the angle values. This is effectively the base from which the signal is scaled. Making the number smaller (ie diving pi by a larger number) increases the gain.
+angle_base = pi / 800
 
 # pylint: disable=C0301
 # Variables being incorrectly identified as constants. Ultimately, there's too much code in the root. I'm not going to invest time into this for now. But it would be worth doing at some point.
@@ -146,14 +164,16 @@ def calculate_diff(rows, long_field, lat_field, out_field_distance, out_field_an
 
         row[out_field_distance] = (long_diff**2 + lat_diff**2)**0.5
 
-        # previousAngle = rows[index - 1][out_field_angle]
+        previousAngle = rows[index - 1][out_field_angle]
         row[out_field_angle] = math.atan2(lat_diff, long_diff)
-        row[out_field_angle + 'Diff'] = row[out_field_angle] - rows[index - 1][out_field_angle]
+        row[out_field_angle + 'Diff'] = row[out_field_angle] - previousAngle
 
         if row[out_field_angle + 'Diff'] > half_pi:
-            row[out_field_angle + 'Diff'] -= 3.14
+            row[out_field_angle + 'Diff'] -= pi
         if row[out_field_angle + 'Diff'] < half_pi * -1:
-            row[out_field_angle + 'Diff'] += 3.1
+            row[out_field_angle + 'Diff'] += pi
+
+        # print(row[out_field_angle], previousAngle, row[out_field_angle + 'Diff'])
 
     return rows
 
@@ -351,6 +371,39 @@ def rows_to_binary_row(rows, which_fields_to_take, good):
 
     return combined_row
 
+def rows_to_angle_row(rows, which_fields_to_take):
+    combined_row = {}
+
+    for _, field_name in enumerate(which_fields_to_take):
+        for index, row in enumerate(rows):
+            final_field_name = field_name + '_' + str(index)
+            combined_row[final_field_name] = row[field_name]
+
+    return combined_row
+
+def rows_to_angle_row_scale(rows, which_fields_to_take, scale_from, offset=0, answer_value=False):
+    combined_row = {}
+
+    for _, field_name in enumerate(which_fields_to_take):
+        for index, row in enumerate(rows):
+            final_field_name = field_name + '_' + str(index)
+            combined_row[final_field_name] = row[field_name]
+
+            combined_row[final_field_name] = ((combined_row[final_field_name] + offset) / (scale_from * 2))
+
+            if combined_row[final_field_name] > 1:
+                combined_row[final_field_name] = 1
+
+            if combined_row[final_field_name] < 0:
+                combined_row[final_field_name] = 0
+
+            combined_row[final_field_name] = round(combined_row[final_field_name], 3)
+
+            #print(row[field_name], scale_from, combined_row[final_field_name])
+
+    combined_row['answer_value'] = answer_value
+
+    return combined_row
 
 def log(data_name, text):
     """ Print debugging output in a consistent way. """
@@ -362,7 +415,7 @@ def log(data_name, text):
 root_rows = read_csv(file_name)
 row_count = len(root_rows)
 root_rows = calculate_diff(root_rows, 'long', 'lat', 'diff', 'angle')
-# root_rows = calculate_simple_diff(root_rows, 'angle', 'angleDiff')
+root_rows = calculate_simple_diff(root_rows, 'angleDiff', 'angleDiffDiff')
 root_rows = calculate_mean(root_rows, 'diff', 'meanDiff')
 root_rows = calculate_simple_diff(root_rows, 'diff', 'diffdiff')
 root_rows = calculate_mean(root_rows, 'diffdiff', 'meanDiffdiff')
@@ -379,10 +432,16 @@ for root_index, root_row in enumerate(root_rows):
     if root_index == 0:
         continue
 
-    if root_row['diffdiff'] > threshold:
+    # if root_row['diffdiff'] > threshold:
+    #     root_row['failDirection'] = 1
+    #
+    # if root_row['diffdiff'] < n_threshold_value:
+    #     root_row['failDirection'] = -1
+
+    if root_row['angleDiffDiff'] > angle_threshold:
         root_row['failDirection'] = 1
 
-    if root_row['diffdiff'] < n_threshold_value:
+    if root_row['angleDiffDiff'] < n_angle_threshold:
         root_row['failDirection'] = -1
 
     if root_row['failDirection'] != 0:
@@ -415,6 +474,7 @@ for root_index, root_row in enumerate(root_rows):
 # Recalculate stuff.
 root_rows = calculate_diff(root_rows, 'correctedLong', 'correctedLat', 'correctedDiff', 'correctedAngle')
 # root_rows = calculate_simple_diff(root_rows, 'correctedAngle', 'correctedAngleDiff')
+root_rows = calculate_simple_diff(root_rows, 'correctedAngleDiff', 'correctedAngleDiffDiff')
 root_rows = calculate_mean(root_rows, 'correctedDiff', 'correctedMeanDiff')
 root_rows = calculate_simple_diff(root_rows, 'correctedDiff', 'correctedDiffdiff')
 root_rows = calculate_mean(root_rows, 'correctedDiffdiff', 'correctedMeanDiffdiff')
@@ -510,14 +570,22 @@ for root_index, root_row in enumerate(root_rows):
 
 # Extract samples.
 log(name, "Extract samples:")
+threshold = sample_size - 1
 clean_rows = 0
+dirty_rows = 0
+accumulated_rows = 0
 clean_samples = 0
 dirty_samples = 0
 non_viable_samples = 0
 binary_rows = {
-    "A" : [],
-    "B" : [],
-    "C" : []
+    "A" : [], # Training data. (Mix of good and not good.)
+    "B" : [], # Testing data. (Mix of good and not good.)
+    "C" : []  # Discarded data (excess clean data).
+    }
+angle_rows = {
+    "A" : [], # Training data. (All good data.)
+    "B" : [], # Testing data. (All good data.)
+    "C" : []  # Non-good data.
     }
 print(name + ': ', end='')
 for root_index, root_row in enumerate(root_rows):
@@ -525,21 +593,30 @@ for root_index, root_row in enumerate(root_rows):
     cleanEnough = (root_good or root_row['corrected'] != 0)
 
     # Track how good the previous samples have been.
-    if cleanEnough:
+    accumulated_rows += 1
+    if root_good:
         clean_rows += 1
-        threshold = sample_size
+        dirty_rows = 0
     else:
         # If we have enougn samples, and only the last one is broken, we still want it.
-        threshold = sample_size - 1
+        clean_rows = 0
+        dirty_rows += 1
 
-    # Make sure we have enough samples.
-    if clean_rows < threshold:
-        print('.', end='')
+    if accumulated_rows < sample_size:
+        # We don't have enough samples.
+        print(' ', end='', flush=True)
         non_viable_samples += 1
+
+        if not root_good:
+            accumulated_rows = 0
+
         continue
 
+    if not root_good:
+        accumulated_rows = 0
+
     # Choose destination.
-    if root_row['failDirection'] == 0:
+    if root_good:
         print('+', end='', flush=True)
         clean_samples += 1
         sample_destination = destination_samples_clean
@@ -573,10 +650,32 @@ for root_index, root_row in enumerate(root_rows):
             # Collect excluded items in group C.
             group = "C"
 
-        binary_row = rows_to_binary_row(relevant_samples, combined_fields_to_take, root_good)
+        binary_row = rows_to_binary_row(relevant_samples, combined_binary_fields_to_take, root_good)
         binary_rows[group].append(binary_row)
+
+    # Create angle rows for later use.
+    if len(angle_rows['A']) * ab_split_negative < len(angle_rows['B']) * ab_split:
+        group = "A"
     else:
-        should_add = False
+        group = "B"
+
+    if not root_good:
+        group = "C"
+
+    # TODO Make this better.
+    # answer = int(root_row['angleDiff'] * 1)
+    answer = root_row['angleDiff'] * 250
+    # if answer > 100: answer = 100
+    # if answer < -100: answer = -100
+
+    if answer > cutOff: group = "C"
+    if answer < nCutOff: group = "C"
+    answer += 100
+    answer /= 200
+
+
+    angle_row = rows_to_angle_row_scale(relevant_samples, combined_angle_fields_to_take, angle_base, angle_base, answer)
+    angle_rows[group].append(angle_row)
 
     # Write out data.
     sample_name = name + '-' + str(start_pos) + '-' + str(end_pos)
@@ -615,4 +714,24 @@ for _, set_name in enumerate(binary_rows):
     file_csv = file_name + '.csv'
     write_csv(file_csv, binary_rows[set_name])
 
-print(f"{name}: Clean samples: {clean_samples}   Dirty samples: {dirty_samples}   Non-viable samples: {non_viable_samples}")
+# Graph angle data.
+if create_normalised_angles_graph:
+    create_generic_graph(
+        destination_graph_file_image + 'FloatAngles',
+        destination_graph_file_pdf + 'FloatAngles',
+        name + ' - Angles ready for consumption',
+        'Angles',
+        angle_rows['A'][1].keys(),
+        'Empty',
+        [],
+        angle_rows['A'],
+        create_pdf=True)
+
+# Write angle data.
+log(name, "Write angle data.")
+for _, set_name in enumerate(angle_rows):
+    file_name = destination_samples_binary + '/angle' + set_name + '/' + name
+    file_csv = file_name + '.csv'
+    write_csv(file_csv, angle_rows[set_name])
+
+print(f"{name}: Eligible clean samples: {clean_samples}   Eligible dirty samples: {dirty_samples}   Non-viable samples: {non_viable_samples}")

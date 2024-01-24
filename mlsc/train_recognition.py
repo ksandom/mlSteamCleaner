@@ -1,4 +1,4 @@
-""" Train a model. """
+""" Train a recognition model. """
 
 import math
 from tensorflow.keras.models import Sequential, load_model
