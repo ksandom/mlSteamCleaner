@@ -741,9 +741,9 @@ for root_index, root_row in enumerate(root_rows):
     angle_rows[group].append(angle_row)
 
     # Give some more variety to our training data.
-    variants = make_variants(angle_row)
-    for variant in variants:
-        angle_rows[group].append(variant)
+    # variants = make_variants(angle_row)
+    # for variant in variants:
+    #     angle_rows[group].append(variant)
 
     # Write out data.
     sample_name = name + '-' + str(start_pos) + '-' + str(end_pos)

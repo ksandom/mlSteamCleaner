@@ -21,7 +21,7 @@ class TrainPrediction:
         self.y_train = y_train
         self.y_test = y_test
         self.full_test_data = full_test_data
-        self.epochs = 50
+        self.epochs = 200
 
         self.model_path = "models/" + self.name
 
