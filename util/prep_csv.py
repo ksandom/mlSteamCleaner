@@ -92,7 +92,7 @@ combined_angle_fields_to_take = [
 # Re-scaling the angle data to make stronger signals for easier training.
 # cutOff = 80
 # nCutOff = cutOff * -1
-unScaled = 0.05
+unScaled = 0.1
 nUnScaled = unScaled * -1
 
 # Input angle data OOB cutoff. This is for filtering out data that is going to give us problems.
@@ -440,6 +440,26 @@ def scale(value, inMin, inMax, outMin, outMax, clip=True):
 
     return centered
 
+def make_variant(source_row, multiplier):
+    output_row = {}
+
+    for key in source_row:
+        output_row[key] = source_row[key] * multiplier
+
+    return output_row
+
+def make_variants(row):
+    output_rows = []
+
+    for multiplier in range(1, 10):
+        positive = multiplier / 10
+
+        output_rows.append(make_variant(row, positive))
+        output_rows.append(make_variant(row, positive * -1))
+    output_rows.append(make_variant(row, -1))
+
+    return output_rows
+
 
 # Do the initial pass.
 root_rows = read_csv(file_name)
@@ -719,6 +739,11 @@ for root_index, root_row in enumerate(root_rows):
 
     angle_row = rows_to_angle_row_scale(relevant_samples, combined_angle_fields_to_take, angle_base, angle_base, answer)
     angle_rows[group].append(angle_row)
+
+    # Give some more variety to our training data.
+    variants = make_variants(angle_row)
+    for variant in variants:
+        angle_rows[group].append(variant)
 
     # Write out data.
     sample_name = name + '-' + str(start_pos) + '-' + str(end_pos)
