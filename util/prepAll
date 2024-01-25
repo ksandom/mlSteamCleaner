@@ -11,7 +11,8 @@ destinationSamplesGraphClean="data/samples/$sampleSize/cleanGraphs"
 destinationSamplesDirty="data/samples/$sampleSize/dirty" # Has an error.
 destinationSamplesGraphDirty="data/samples/$sampleSize/dirtyGraphs"
 
-rm -Rf "$destinationSamplesBinary"/{A,B,C,angleA,angleB,angleC}
+rm -Rf "$destinationGraphPDFs" "$destinationSamplesBinary" "$destinationSamplesBinary"/{A,B,C,angleA,angleB,angleC} "$destinationSamplesClean" "$destinationSamplesDirty"
+
 mkdir -p "$destination" "$destinationGraphImages" "$destinationGraphPDFs" "$destinationSamplesBinary"/{A,B,C,angleA,angleB,angleC} "$destinationSamplesClean" "$destinationSamplesDirty" "$destinationSamplesGraphClean" "$destinationSamplesGraphDirty" models
 
 while read -r file; do
