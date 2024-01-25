@@ -99,8 +99,8 @@ class Predict:
         if (scale):
             nScale = scale * -1
             plt.ylim([nScale, scale])
-        plt.xlabel('Epoch')
-        plt.ylabel('Error')
+        plt.xlabel('Point in sequence (higher is more recent)')
+        plt.ylabel('angleDiff (radians)')
         plt.legend()
         plt.grid(True)
 
