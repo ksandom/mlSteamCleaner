@@ -1,8 +1,6 @@
 """ Train a prediction model. """
 
 import math
-# from tensorflow.keras.models import Sequential, load_model
-# from tensorflow.keras.layers import Dense
 
 import tensorflow as tf
 

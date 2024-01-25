@@ -6,7 +6,7 @@ Loosely based on https://www.youtube.com/watch?v=-vHQub0NXI4 and
 https://www.tensorflow.org/tutorials/keras/regression
 
 Syntax:
-./train_recognition.py modelFile trainData testData
+./train_prediction.py modelFile trainData testData
 
 """
 

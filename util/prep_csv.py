@@ -84,13 +84,20 @@ combined_binary_fields_to_take = [
     'correctedDiffScaledInt'
     ]
 
-# # Which fields to put into the combined binary samples file.
+# # Which fields to put into the combined samples file.
 combined_angle_fields_to_take = [
     'angleDiffDiff'
     ]
 
-cutOff = 80
-nCutOff = cutOff * -1
+# Re-scaling the angle data to make stronger signals for easier training.
+# cutOff = 80
+# nCutOff = cutOff * -1
+unScaled = 0.05
+nUnScaled = unScaled * -1
+
+# Input angle data OOB cutoff. This is for filtering out data that is going to give us problems.
+angleCutoff = 0.98
+nAngleCutoff = 0.02
 
 # Some loose maths stuff.
 pi = math.pi
@@ -385,9 +392,9 @@ def rows_to_angle_row_scale(rows, which_fields_to_take, scale_from, offset=0, an
     combined_row = {}
 
     for _, field_name in enumerate(which_fields_to_take):
-        for index, row in enumerate(rows):
+        for index in range(0, len(rows)-1):
             final_field_name = field_name + '_' + str(index)
-            combined_row[final_field_name] = row[field_name]
+            combined_row[final_field_name] = rows[index][field_name]
 
             combined_row[final_field_name] = ((combined_row[final_field_name] + offset) / (scale_from * 2))
 
@@ -399,7 +406,7 @@ def rows_to_angle_row_scale(rows, which_fields_to_take, scale_from, offset=0, an
 
             combined_row[final_field_name] = round(combined_row[final_field_name], 3)
 
-            #print(row[field_name], scale_from, combined_row[final_field_name])
+            #print(rows[index][field_name], scale_from, combined_row[final_field_name])
 
     combined_row['answer_value'] = answer_value
 
@@ -409,6 +416,29 @@ def log(data_name, text):
     """ Print debugging output in a consistent way. """
     print(data_name + ": " + text)
 
+def scale(value, inMin, inMax, outMin, outMax, clip=True):
+    # TODO This has lots of room for optimisation.
+
+    inRange = inMax - inMin
+    outRange = outMax - outMin
+
+    zeroed = value - inMin
+    scaled = zeroed / inRange * outRange
+    centered = scaled + outMin
+
+    if centered < outMin:
+        if clip:
+            centered = outMin
+        else:
+            return False
+
+    if centered > outMax:
+        if clip:
+            centered = outMax
+        else:
+            return False
+
+    return centered
 
 
 # Do the initial pass.
@@ -577,6 +607,7 @@ accumulated_rows = 0
 clean_samples = 0
 dirty_samples = 0
 non_viable_samples = 0
+oob = False
 binary_rows = {
     "A" : [], # Training data. (Mix of good and not good.)
     "B" : [], # Testing data. (Mix of good and not good.)
@@ -588,6 +619,7 @@ angle_rows = {
     "C" : []  # Non-good data.
     }
 print(name + ': ', end='')
+
 for root_index, root_row in enumerate(root_rows):
     root_good = root_row['failDirection'] == 0
     cleanEnough = (root_good or root_row['corrected'] != 0)
@@ -664,15 +696,26 @@ for root_index, root_row in enumerate(root_rows):
 
     # TODO Make this better.
     # answer = int(root_row['angleDiff'] * 1)
-    answer = root_row['angleDiff'] * 250
+    # answer = root_row['angleDiff'] * 1000
     # if answer > 100: answer = 100
     # if answer < -100: answer = -100
 
-    if answer > cutOff: group = "C"
-    if answer < nCutOff: group = "C"
-    answer += 100
-    answer /= 200
+    # if answer > cutOff: group = "C"
+    # if answer < nCutOff: group = "C"
+    # answer += 100
+    # answer /= 100
 
+    answer = scale(root_row['angleDiff'], nUnScaled, unScaled, 0.01, 0.99)
+    if answer is False :
+        group = "C"
+        answer = root_row['angleDiff']
+        oob = True
+
+    for angle_row in relevant_samples:
+        if answer > angleCutoff:
+            group = "C"
+        if answer < nAngleCutoff:
+            group = "C"
 
     angle_row = rows_to_angle_row_scale(relevant_samples, combined_angle_fields_to_take, angle_base, angle_base, answer)
     angle_rows[group].append(angle_row)
