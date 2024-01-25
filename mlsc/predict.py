@@ -38,8 +38,12 @@ class Predict:
 
         self.model = load_model("models/" + model)
 
-    def load_sample(self, sample_file):
+    def load_sample(self, sample_file, name=""):
         self.debug.log("Load sample " + sample_file)
+
+        self.name = name
+        if self.name == "":
+            self.name = sample_file
 
         self.df_raw = pd.read_csv(sample_file)
         self.df_raw_without_answer = self.df_raw[:-1]

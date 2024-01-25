@@ -52,7 +52,7 @@ for file_name_in in only_files:
 
     print("Process " + file_in)
 
-    predict.load_sample(file_in)
+    predict.load_sample(file_in, file_name_in)
     predict.predict()
-    predict.plot("Prediction for " + file_in, output_graph, 0.1)
+    predict.plot(file_name_in.replace('.csv', ''), output_graph, 0.1)
 
