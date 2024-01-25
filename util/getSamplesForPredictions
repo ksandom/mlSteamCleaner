@@ -1,0 +1,30 @@
+#!/bin/bash
+# Select some samples for predictions.
+
+outputDir="data/predictions"
+samplesToCollect=15
+
+if [ "$1" == '' ]; then
+    echo "No input files specified. So using defaults."
+    sampleDirs=$(ls -d data/samples/10/{clean,dirty})
+    # sampleDirs="data/samples/10/clean"
+else
+    echo "Input files specified. So using those."
+    sampleDirs="$@"
+fi
+
+echo $sampleDirs
+
+rm -Rf "$outputDir"
+mkdir -pv "$outputDir"/{graphs,bulkGraphs,samples}
+
+for dirName in $sampleDirs; do
+    echo "Selecting samples from: $dirName"
+    while read fileName; do
+        cp -v "$dirName/$fileName" "$outputDir/samples/"
+    # done < <(ls -1 "$dirName" | sort -R | head -n "$samplesToCollect")
+    done < <(ls -1 "$dirName" | grep -v '.-C\.csv' | sort -R | head -n "$samplesToCollect")
+done
+
+possiblePredictions="$(ls -1 $sampleDirs | wc -l)"
+echo "from $possiblePredictions possible predictions."

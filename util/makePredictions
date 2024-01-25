@@ -1,0 +1,28 @@
+#!/bin/bash
+# Make some predictions.
+
+outputDir="data/predictions"
+sampleDir="$outputDir/samples"
+graphDir="$outputDir/graphs"
+
+if [ ! -e "$sampleDir" ]; then
+    echo "getSamplesForPredictions doesn't appear to have been run. Running it now."
+    getSamplesForPredictions
+fi
+
+earlyExit=0
+if [ "$1" != '' ]; then
+    earlyExit=1
+fi
+
+while read sampleName; do
+    inFileName="$sampleDir/$sampleName"
+    graphFileName="$(echo "$sampleName" | sed 's/\.csv$//g').png"
+
+    echo "Making a prediction for $inFileName."
+    ./predict.py "$inFileName" "$graphDir/$graphFileName"
+
+    if [ "$earlyExit" -eq 1 ]; then
+        echo "Exiting prematurely."; exit 1
+    fi
+done < <(ls -1 "$sampleDir")

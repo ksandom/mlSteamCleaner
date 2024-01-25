@@ -1,0 +1,14 @@
+#!/bin/bash
+# Make some predictions.
+
+outputDir="data/predictions"
+sampleDir="data/samples/10/clean"
+graphDir="$outputDir/bulkGraphs"
+
+
+if [ ! -e "$sampleDir" ]; then
+    echo "getSamplesForPredictions doesn't appear to have been run. Running it now."
+    getSamplesForPredictions
+fi
+
+./predictBulk.py "$sampleDir" "$graphDir/$graphFileName"
