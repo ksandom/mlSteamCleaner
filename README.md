@@ -101,3 +101,12 @@ The data that you place in the data/raw directory must be:
     * Anything else will be ignored.
 
 You can use `./util/extraAll` to create these files. Note that it is set up for my data source, where these fields are originally called `default_longitude-deg` and `default_latitude-deg`. So you'll likely need to adapt it to your needs.
+
+## Traditional tools/libraries that may be useful to you
+
+This is not a mature tool.
+
+If you know of existing libraries or tools that people could use instead of this project, please create a [Pull Request](https://github.com/ksandom/mlSteamCleaner/pulls) to update this file, or comment on the [relevant issue](https://github.com/ksandom/mlSteamCleaner/issues/2).
+
+* Items go here.
+
