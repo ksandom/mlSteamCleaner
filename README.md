@@ -1,6 +1,8 @@
 # mlSteamCleaner
 Clean a stream of location data using machine learning
 
+![Predict the correct point.](https://github.com/ksandom/mlSteamCleaner/blob/24fe69ce224d1677ea56c83ce621a9cf8b5a46c3/data/img/2023-06-20-104227-accurateWaypoints.csv-1019-1029-C.csv.png)
+
 ## Installation
 
 ```bash
