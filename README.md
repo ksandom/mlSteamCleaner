@@ -3,6 +3,9 @@ Clean a stream of location data using machine learning
 
 ![Predict the correct point.](https://github.com/ksandom/mlSteamCleaner/blob/24fe69ce224d1677ea56c83ce621a9cf8b5a46c3/data/img/2023-06-20-104227-accurateWaypoints.csv-1019-1029-C.csv.png)
 
+* **Orange** is the **raw data** that came from the flight simulator.
+* **Blue** is the **prediction** of what the value should be.
+
 This project is very much a prototype to play with concepts. It is not production-ready code.
 
 Processing GPS data is a mature problem, and there are likely many libraries already available to help you.
