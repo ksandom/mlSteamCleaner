@@ -36,7 +36,7 @@ ksandom@delli:~/files/develop/mlSteamCleaner/data$ du -sh *
 
 In particular, you may be interested in the visualisations in `graphImages` and `graphPDFs`.
 
-**Expected time:** ~15 minutes on 2018 hardware.
+**Expected time:** ~3.5 minutes on 2018 hardware.
 
 ### Train the recognition model
 
